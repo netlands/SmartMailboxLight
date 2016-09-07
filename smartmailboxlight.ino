@@ -12,7 +12,8 @@ unsigned long interval = 30000UL; //300000UL;
 
 int init = 0;
 
-unsigned long lastUpdate = 0UL;
+char lastUpdate[20];
+char activeSince[20];
 
 #define ONE_DAY_MILLIS (24 * 60 * 60 * 1000)
 unsigned long lastSync = millis();
@@ -61,12 +62,12 @@ int analogvalue;
 char p1[10];*/
 
 char data[128];
-char graphData[200];
+char graphData[600];
 // history
 // create a queue of numbers.
-QueueArray <int> queue;
 QueueArray <int> graph;
 unsigned long logDelay = 0UL;
+int logInterval = 600000UL;
 
 void setup() {
 
@@ -80,7 +81,10 @@ void setup() {
     // Set time zone to Japan Standard Time (JST)
     Time.zone(Timezone); 
 
-
+    sprintf(activeSince, "%i-%02i-%02i %02i:%02i", Time.year(), Time.month(), Time.day(), Time.hour(), Time.minute());
+    // time_t activeSince;
+    // Time.hour(activeSince);
+    
     pinMode(RELAYPIN, OUTPUT);
     digitalWrite(RELAYPIN, HIGH);
     Particle.function("switchon", switchOn);
@@ -88,8 +92,8 @@ void setup() {
     Particle.function("status", Status);
     Particle.function("Switch", Switch);
     
-    Particle.variable("sunrise", sr, STRING);    
-    Particle.variable("sunset", ss, STRING); 
+    // Particle.variable("sunrise", sr, STRING);    
+    // Particle.variable("sunset", ss, STRING); 
     
     Particle.variable("temperature", t1, STRING);    
     Particle.variable("humidity", h1, STRING);     
@@ -106,8 +110,8 @@ void setup() {
 
 	Particle.function("getData", getGraphData);
 	Particle.variable("history", graphData, STRING);
-    Particle.variable("lastUpdate", &lastTime, INT);
-    Particle.variable("interval", &interval, INT);
+    Particle.variable("lastUpdate", lastUpdate, STRING);
+    Particle.variable("interval", &logInterval, INT);
 
     pinMode(DHTPIN, INPUT_PULLUP);
 
@@ -121,8 +125,13 @@ void loop() {
     if ((millis() - lastSync) > 300000 && !init)  {
         // delay one time initialization
         init = 1;
+
         Particle.syncTime();
         update();
+        
+        sprintf(activeSince, "%i-%02i-%02i %02i:%02i", Time.year(), Time.month(), Time.day(), Time.hour(), Time.minute());
+        // time_t activeSince;
+        // Time.hour(activeSince);        
     }       
     
     
@@ -160,8 +169,8 @@ void loop() {
         readDhtData();
         
         // log data
-        if (graph.count() == 20){graph.pop();}
-		graph.enqueue( round(t) ); // round(t*10)/10
+        // if (graph.count() == 20){graph.pop();}
+		// graph.enqueue( round(t) ); // round(t*10)/10
         
     }    
 
@@ -170,8 +179,9 @@ void loop() {
 		if (now-logDelay>600000UL) {
 			logDelay = now;
 			// keep 24 hours
-			if (queue.count() == 144){queue.pop();}
-			queue.enqueue( round(t) ); // round(t*10)/10
+			if (graph.count() == 144){graph.pop();}
+			graph.enqueue( round(t) ); // round(t*10)/10
+			sprintf(lastUpdate, "%i-%02i-%02i %02i:%02i", Time.year(), Time.month(), Time.day(), Time.hour(), Time.minute());
 		}
 
 
@@ -241,7 +251,6 @@ void update() {
     sunset=mySunrise.Set(Time.month(),Time.day()); 
     sprintf(ss, "%02i:%02i", (int)mySunrise.sun_Hour(), (int)mySunrise.sun_Minute()); 
     
-    lastUpdate = millis();
 }
 
 int getGraphData(String args) {
@@ -276,9 +285,10 @@ void readDhtData() {
         Particle.publish("humidity",h1);
         
         //Particle.publish("brightness",p1);
-                
+           
+        
         // format your data as JSON, don't forget to escape the double quotes
         // sprintf(resultstr, "{\"current\":%i,\"sunrise\":%i,\"sunset\":%i}", current, sunrise, sunset);
-        sprintf(resultstr, "{\"current\":\"%02i:%02i\",\"status\":\"%i\",\"sunrise\":\"%s\",\"sunset\":\"%s\",\"temp\":\"%.2f\",\"rh\":\"%.2f\"}", Time.hour(), Time.minute(), relayState, sr, ss, t, h);   
+        sprintf(resultstr, "{\"current\":\"%02i:%02i\",\"active\":\"%s\",\"status\":\"%i\",\"sunrise\":\"%s\",\"sunset\":\"%s\",\"temp\":\"%.2f\",\"rh\":\"%.2f\"}", Time.hour(), Time.minute(), activeSince, relayState, sr, ss, t, h);   
         
 }
