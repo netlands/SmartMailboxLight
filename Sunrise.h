@@ -13,7 +13,7 @@ class Sunrise{
   int Noon(unsigned char ,unsigned char );
   unsigned char Hour();
   unsigned char Minute();
-  
+
   private:
   int Compute(unsigned char ,unsigned char, int);
   float lat,lon, zenith, rd, tz;

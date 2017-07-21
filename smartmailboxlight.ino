@@ -1,5 +1,5 @@
 // This #include statement was automatically added by the Particle IDE.
-#include "Adafruit_DHT/Adafruit_DHT.h"
+#include "Adafruit_DHT.h"
 
 // This #include statement was automatically added by the Particle IDE.
 #include "Sunrise.h"
@@ -7,8 +7,8 @@
 #include "QueueArray.h"
 
 // for publishing
-unsigned long lastTime = 0UL; 
-unsigned long interval = 30000UL; //300000UL;  
+unsigned long lastTime = 0UL;
+unsigned long interval = 30000UL; //300000UL;
 
 int init = 0;
 
@@ -37,9 +37,9 @@ int switchoff(String command);
 bool override(false);
 
 #define DHTPIN D2     // what pin we're connected to
-//#define DHTTYPE DHT11		// DHT 11 
-#define DHTTYPE DHT22		// DHT 22 (AM2302)
-//#define DHTTYPE DHT21		// DHT 21 (AM2301)
+//#define DHTTYPE DHT11    // DHT 11
+#define DHTTYPE DHT22    // DHT 22 (AM2302)
+//#define DHTTYPE DHT21    // DHT 21 (AM2301)
 
 // Connect pin 1 (on the left) of the sensor to +5V
 // Connect pin 2 of the sensor to whatever your DHTPIN is
@@ -56,8 +56,8 @@ char t1[10];  // temperature string
 char resultstr[128]; // for logging 64
 
 
-/*int photoresistor = A1; 
-int prpower = A5; 
+/*int photoresistor = A1;
+int prpower = A5;
 int analogvalue;
 char p1[10];*/
 
@@ -79,110 +79,110 @@ void setup() {
     mySunrise.Actual(); //Actual, Civil, Nautical, Astronomical
 
     // Set time zone to Japan Standard Time (JST)
-    Time.zone(Timezone); 
+    Time.zone(Timezone);
 
     sprintf(activeSince, "%i-%02i-%02i %02i:%02i", Time.year(), Time.month(), Time.day(), Time.hour(), Time.minute());
     // time_t activeSince;
     // Time.hour(activeSince);
-    
+
     pinMode(RELAYPIN, OUTPUT);
     digitalWrite(RELAYPIN, HIGH);
     Particle.function("switchon", switchOn);
-	Particle.function("switchoff", switchOff);
+    Particle.function("switchoff", switchOff);
     Particle.function("status", Status);
     Particle.function("Switch", Switch);
-    
-    // Particle.variable("sunrise", sr, STRING);    
-    // Particle.variable("sunset", ss, STRING); 
-    
-    Particle.variable("temperature", t1, STRING);    
-    Particle.variable("humidity", h1, STRING);     
+
+    // Particle.variable("sunrise", sr, STRING);
+    // Particle.variable("sunset", ss, STRING);
+
+    Particle.variable("temperature", t1, STRING);
+    Particle.variable("humidity", h1, STRING);
 
     /*Particle.variable("analogvalue", &analogvalue, INT);
-    pinMode(photoresistor,INPUT); 
+    pinMode(photoresistor,INPUT);
     pinMode(prpower,OUTPUT); */
-    
-    Particle.variable("data", resultstr, STRING); 
+
+    Particle.variable("data", resultstr, STRING);
 
     // initialize sunset variables
     Particle.syncTime();
     update();
 
-	Particle.function("getData", getGraphData);
-	Particle.variable("history", graphData, STRING);
+    Particle.function("getData", getGraphData);
+    Particle.variable("history", graphData, STRING);
     Particle.variable("lastUpdate", lastUpdate, STRING);
     Particle.variable("interval", &logInterval, INT);
 
     pinMode(DHTPIN, INPUT_PULLUP);
 
-	dht.begin();
+  dht.begin();
 
 }
 
 void loop() {
 
-    
+
     if ((millis() - lastSync) > 300000 && !init)  {
         // delay one time initialization
         init = 1;
 
         Particle.syncTime();
         update();
-        
+
         sprintf(activeSince, "%i-%02i-%02i %02i:%02i", Time.year(), Time.month(), Time.day(), Time.hour(), Time.minute());
         // time_t activeSince;
-        // Time.hour(activeSince);        
-    }       
-    
-    
+        // Time.hour(activeSince);
+    }
+
+
     if (millis() - lastSync > ONE_DAY_MILLIS) {
         // Request time synchronization from the Spark Cloud
         Particle.syncTime();
         lastSync = millis();
-        
-        // calculate sunrise/sunset once a day 
+
+        // calculate sunrise/sunset once a day
         update();
 
-    }  
-    
+    }
+
     unsigned long now = millis();
     // publish data every n seconds
     if (now-lastTime>interval) {
-        lastTime = now; 
+        lastTime = now;
         // now is in milliseconds
-        
+
          // check if we need to switch on the light
-        int current = (Time.hour() * 60) + Time.minute(); 
+        int current = (Time.hour() * 60) + Time.minute();
         if ((current > sunrise) && (current < sunset)) {
             // OFF
             if (!override) {
-                digitalWrite(RELAYPIN, HIGH); 
-                relayState = 1; 
+                digitalWrite(RELAYPIN, HIGH);
+                relayState = 1;
             }
         } else {
             // ON
             override = false;
-            digitalWrite(RELAYPIN, LOW); 
-            relayState = 0;    
-        }        
-        
+            digitalWrite(RELAYPIN, LOW);
+            relayState = 0;
+        }
+
         readDhtData();
-        
+
         // log data
         // if (graph.count() == 20){graph.pop();}
-		// graph.enqueue( round(t) ); // round(t*10)/10
-        
-    }    
+    // graph.enqueue( round(t) ); // round(t*10)/10
+
+    }
 
 
-		// log data every 10 minutes
-		if (now-logDelay>600000UL) {
-			logDelay = now;
-			// keep 24 hours
-			if (graph.count() == 144){graph.pop();}
-			graph.enqueue( round(t) ); // round(t*10)/10
-			sprintf(lastUpdate, "%i-%02i-%02i %02i:%02i", Time.year(), Time.month(), Time.day(), Time.hour(), Time.minute());
-		}
+    // log data every 10 minutes
+    if (now-logDelay>600000UL) {
+      logDelay = now;
+      // keep 24 hours
+      if (graph.count() == 144){graph.pop();}
+      graph.enqueue( round(t) ); // round(t*10)/10
+      sprintf(lastUpdate, "%i-%02i-%02i %02i:%02i", Time.year(), Time.month(), Time.day(), Time.hour(), Time.minute());
+    }
 
 
 }
@@ -194,26 +194,26 @@ int toggleSwitch(String args) {
 }
 
 int switchOn(String command) {
-	pinMode(RELAYPIN, OUTPUT);
-	digitalWrite(RELAYPIN, 0);
-	relayState = 0;	
-	override = true;
-	return 0;}
+  pinMode(RELAYPIN, OUTPUT);
+  digitalWrite(RELAYPIN, 0);
+  relayState = 0;
+  override = true;
+  return 0;}
 
 int switchOff(String command) {
-	pinMode(RELAYPIN, OUTPUT);
-	digitalWrite(RELAYPIN, 1);
-	relayState = 1;
-	override = false;
-	return 1;}	
-	
-	
+  pinMode(RELAYPIN, OUTPUT);
+  digitalWrite(RELAYPIN, 1);
+  relayState = 1;
+  override = false;
+  return 1;}
+
+
 int Switch(String args)
 {
   // char id = args.charAt(0);
 
   if (args == "ON" || args == "on" || args == "1"){
-    digitalWrite(RELAYPIN, LOW); 
+    digitalWrite(RELAYPIN, LOW);
     override = true;
     relayState = 0;
   }
@@ -236,7 +236,7 @@ int Status(String args) {
     if (digitalRead(RELAYPIN) == 1) {
         relayState = 1;
         answer = 0;
-    }  
+    }
     //return relayState;
     return answer;
 }
@@ -247,48 +247,48 @@ void update() {
     // calculate today's sunrise/sunset
     // minutes past midnight of sunrise (6 am would be 360)
     sunrise=mySunrise.Rise(Time.month(),Time.day()); // (month,day) - january=1
-    sprintf(sr, "%02i:%02i", (int)mySunrise.sun_Hour(), (int)mySunrise.sun_Minute());
-    sunset=mySunrise.Set(Time.month(),Time.day()); 
-    sprintf(ss, "%02i:%02i", (int)mySunrise.sun_Hour(), (int)mySunrise.sun_Minute()); 
-    
+    sprintf(sr, "%02i:%02i", (int)mySunrise.Hour(), (int)mySunrise.Minute());
+    sunset=mySunrise.Set(Time.month(),Time.day());
+    sprintf(ss, "%02i:%02i", (int)mySunrise.Hour(), (int)mySunrise.Minute());
+
 }
 
 int getGraphData(String args) {
 
-	strcpy(graphData,graph.toString());
-	return 1;
+  strcpy(graphData,graph.toString());
+  return 1;
 
 }
 
 void readDhtData() {
-    
+
         /* analogvalue = analogRead(photoresistor);
         sprintf(p1, "%i", analogvalue);*/
 
         // Reading temperature or humidity takes about 250 milliseconds!
-        // Sensor readings may also be up to 2 seconds 'old' (its a 
+        // Sensor readings may also be up to 2 seconds 'old' (its a
         // very slow sensor)
-    	h = dht.getHumidity();
+      h = dht.getHumidity();
         // Read temperature as Celsius
-    	t = dht.getTempCelcius();
-        
+      t = dht.getTempCelcius();
+
         // Check if any reads failed and exit early (to try again).
-    	if (isnan(h) || isnan(t)) {
-    		// Serial.println("Failed to read from DHT sensor!");
-    		// return;
-    	} else {
-    	    sprintf(h1, "%.0f", h); // convert Float to String
+      if (isnan(h) || isnan(t)) {
+        // Serial.println("Failed to read from DHT sensor!");
+        // return;
+      } else {
+          sprintf(h1, "%.0f", h); // convert Float to String
             sprintf(t1, "%.1f", t);
-    	}        
-        
+      }
+
         Particle.publish("temperature",t1);
         Particle.publish("humidity",h1);
-        
+
         //Particle.publish("brightness",p1);
-           
-        
+
+
         // format your data as JSON, don't forget to escape the double quotes
         // sprintf(resultstr, "{\"current\":%i,\"sunrise\":%i,\"sunset\":%i}", current, sunrise, sunset);
-        sprintf(resultstr, "{\"current\":\"%02i:%02i\",\"active\":\"%s\",\"status\":\"%i\",\"sunrise\":\"%s\",\"sunset\":\"%s\",\"temp\":\"%.2f\",\"rh\":\"%.2f\"}", Time.hour(), Time.minute(), activeSince, relayState, sr, ss, t, h);   
-        
+        sprintf(resultstr, "{\"current\":\"%02i:%02i\",\"active\":\"%s\",\"status\":\"%i\",\"sunrise\":\"%s\",\"sunset\":\"%s\",\"temp\":\"%.2f\",\"rh\":\"%.2f\"}", Time.hour(), Time.minute(), activeSince, relayState, sr, ss, t, h);
+
 }
